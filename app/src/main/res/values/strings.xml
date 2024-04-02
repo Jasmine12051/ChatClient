@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Web Service Demo</string>
+    <string name="getButton">GET</string>
+    <string name="postButton">POST</string>
+    <string name="clear">Clear</string>
+    <string name="input_field">Input Field</string>
+</resources>
