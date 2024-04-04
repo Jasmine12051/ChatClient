@@ -1,11 +1,8 @@
 package edu.jsu.mcis.cs408.webservicedemo;
 
 import android.util.Log;
-
 import androidx.lifecycle.MutableLiveData;
-
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -14,7 +11,6 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 import javax.net.ssl.HttpsURLConnection;
 
 public class ExampleWebServiceModel extends AbstractModel {
@@ -23,64 +19,46 @@ public class ExampleWebServiceModel extends AbstractModel {
 
     private static final String GET_URL = "https://testbed.jaysnellen.com:8443/SimpleChat/board";
     private static final String POST_URL = "https://testbed.jaysnellen.com:8443/SimpleChat/board";
-
+    private static final String DELETE_URL = "https://testbed.jaysnellen.com:8443/SimpleChat/board";
     private MutableLiveData<JSONObject> jsonData;
-
     private String outputText;
 
     private final ExecutorService requestThreadExecutor;
-    private final Runnable httpGetRequestThread, httpPostRequestThread;
+    private final Runnable httpGetRequestThread, httpPostRequestThread, httpDeleteRequestThread;
     private Future<?> pending;
 
-    public ExampleWebServiceModel() {
+    private String postData; // Added to store JSON data for POST request
 
+    public ExampleWebServiceModel() {
         requestThreadExecutor = Executors.newSingleThreadExecutor();
 
-        httpGetRequestThread = new Runnable() {
-
-            @Override
-            public void run() {
-
-                /* If a previous request is still pending, cancel it */
-
-                if (pending != null) { pending.cancel(true); }
-
-                /* Begin new request now, but don't wait for it */
-
-                try {
-                    pending = requestThreadExecutor.submit(new HTTPRequestTask("GET", GET_URL));
-                }
-                catch (Exception e) { Log.e(TAG, " Exception: ", e); }
-
-            }
-
+        httpGetRequestThread = () -> {
+            if (pending != null) { pending.cancel(true); }
+            try {
+                pending = requestThreadExecutor.submit(new HTTPRequestTask("GET", GET_URL, null));
+            } catch (Exception e) { Log.e(TAG, " Exception: ", e); }
         };
 
-        httpPostRequestThread = new Runnable() {
-
-            @Override
-            public void run() {
-
-                /* If a previous request is still pending, cancel it */
-
-                if (pending != null) { pending.cancel(true); }
-
-                /* Begin new request now, but don't wait for it */
-
-                try {
-                    pending = requestThreadExecutor.submit(new HTTPRequestTask("POST", POST_URL));
-                }
-                catch (Exception e) { Log.e(TAG, " Exception: ", e); }
-
-            }
-
+        httpPostRequestThread = () -> {
+            if (pending != null) { pending.cancel(true); }
+            try {
+                pending = requestThreadExecutor.submit(new HTTPRequestTask("POST", POST_URL, postData));
+            } catch (Exception e) { Log.e(TAG, " Exception: ", e); }
         };
 
+        httpDeleteRequestThread = () -> {
+            if (pending != null) { pending.cancel(true); }
+            try {
+                // Create a new HTTPRequestTask with DELETE method and URL
+                pending = requestThreadExecutor.submit(new HTTPRequestTask("DELETE", DELETE_URL, null));
+            } catch (Exception e) {
+                Log.e(TAG, " Exception: ", e);
+            }
+        };
     }
 
     public void initDefault() {
         sendGetRequest();
-
     }
 
     public String getOutputText() {
@@ -88,36 +66,28 @@ public class ExampleWebServiceModel extends AbstractModel {
     }
 
     public void setOutputText(String newText) {
-
         String oldText = this.outputText;
         this.outputText = newText;
-
         Log.i(TAG, "Output Text Change: From " + oldText + " to " + newText);
-
         firePropertyChange(DefaultController.ELEMENT_OUTPUT_PROPERTY, oldText, newText);
-
     }
-
-    // Start GET Request (called from Controller)
 
     public void sendGetRequest() {
         httpGetRequestThread.run();
     }
 
-    // Start POST Request (called from Controller)
-
-    public void sendPostRequest() {
+    public void sendPostRequest(String jsonData) {
+        this.postData = jsonData; // Set JSON data to postData
         httpPostRequestThread.run();
     }
 
-    // Setter / Getter Methods for JSON LiveData
+    public void sendDeleteRequest() {
+        httpDeleteRequestThread.run();
+    }
 
     private void setJsonData(JSONObject json) {
-
         this.getJsonData().postValue(json);
-
         setOutputText(json.toString());
-
     }
 
     public MutableLiveData<JSONObject> getJsonData() {
@@ -127,125 +97,86 @@ public class ExampleWebServiceModel extends AbstractModel {
         return jsonData;
     }
 
-    // Private Class for HTTP Request Threads
-
     private class HTTPRequestTask implements Runnable {
 
-        private static final String TAG = "HTTPRequestTask";
         private final String method, urlString;
+        private final String jsonData;
 
-        HTTPRequestTask(String method, String urlString) {
+        HTTPRequestTask(String method, String urlString, String jsonData) {
             this.method = method;
             this.urlString = urlString;
+            this.jsonData = jsonData;
         }
 
         @Override
         public void run() {
-            JSONObject results = doRequest(urlString);
+            JSONObject results = doRequest(urlString, jsonData);
             setJsonData(results);
         }
 
-        /* Create and Send Request */
-
-        private JSONObject doRequest(String urlString) {
-
+        private JSONObject doRequest(String urlString, String jsonData) {
             StringBuilder r = new StringBuilder();
             String line;
-
             HttpURLConnection conn = null;
             JSONObject results = null;
 
-            /* Log Request Data */
-
             try {
-
-                /* Check if task has been interrupted */
-
-                if (Thread.interrupted())
-                    throw new InterruptedException();
-
-                /* Create Request */
+                if (Thread.interrupted()) throw new InterruptedException();
 
                 URL url = new URL(urlString);
+                conn = (HttpURLConnection) url.openConnection();
 
-                conn = (HttpURLConnection)url.openConnection();
+                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
 
-                conn.setReadTimeout(10000); /* ten seconds */
-                conn.setConnectTimeout(15000); /* fifteen seconds */
-
+                // Set the request method based on the 'method' parameter
                 conn.setRequestMethod(method);
                 conn.setDoInput(true);
 
-                /* Add Request Parameters (if any) */
-
-                if (method.equals("POST") ) {
-
+                // Check if it's a POST request to include JSON data
+                if (method.equals("POST")) {
                     conn.setDoOutput(true);
-
-                    // Create request parameters (these will be echoed back by the example API)
-
-                    String p = "name=Jasmine&message=HelloWorld";
-
-                    // Write parameters to request body
-
                     OutputStream out = conn.getOutputStream();
-                    out.write(p.getBytes());
+                    out.write(jsonData.getBytes());
                     out.flush();
                     out.close();
-
                 }
 
-                /* Send Request */
-
+                // Connect to the URL
                 conn.connect();
 
-                /* Check if task has been interrupted */
-
-                if (Thread.interrupted())
-                    throw new InterruptedException();
-
-                /* Get Reader for Results */
-
+                // Get the response code
                 int code = conn.getResponseCode();
 
-                if (code == HttpsURLConnection.HTTP_OK || code == HttpsURLConnection.HTTP_CREATED) {
-
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-                    /* Read Response Into StringBuilder */
-
-                    do {
-                        line = reader.readLine();
-                        if (line != null)
-                            r.append(line);
+                // Handle DELETE request separately
+                if (method.equals("DELETE")) {
+                    if (code == HttpURLConnection.HTTP_OK) {
+                        Log.d(TAG, "Delete operation successful");
+                    } else {
+                        Log.e(TAG, "Delete operation failed");
                     }
-                    while (line != null);
+                } else {
+                    // Handle other HTTP methods (GET, POST, etc.)
+                    if (code == HttpsURLConnection.HTTP_OK || code == HttpsURLConnection.HTTP_CREATED) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
+                        do {
+                            line = reader.readLine();
+                            if (line != null) r.append(line);
+                        } while (line != null);
+                    }
+
+                    results = new JSONObject(r.toString());
                 }
 
-                /* Check if task has been interrupted */
-
-                if (Thread.interrupted())
-                    throw new InterruptedException();
-
-                /* Parse Response as JSON */
-
-                results = new JSONObject(r.toString());
-
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Log.e(TAG, " Exception: ", e);
-            }
-            finally {
+            } finally {
                 if (conn != null) { conn.disconnect(); }
             }
 
-            /* Finished; Log and Return Results */
-
             Log.d(TAG, " JSON: " + r.toString());
-
             return results;
-
         }
 
     }

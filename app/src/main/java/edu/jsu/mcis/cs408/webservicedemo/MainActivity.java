@@ -8,6 +8,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.beans.PropertyChangeEvent;
 import edu.jsu.mcis.cs408.webservicedemo.databinding.ActivityMainBinding;
 
@@ -45,7 +48,27 @@ public class MainActivity extends AppCompatActivity implements AbstractView {
         binding.postButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                controller.sendPostRequest();
+                String username = "USER 1";
+                String message = binding.input.getText().toString();
+                // Construct JSON data
+                JSONObject json = new JSONObject();
+                try {
+                    json.put("name", username);
+                    json.put("message", message);
+                }
+                catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                // Send POST request
+                model.sendPostRequest(json.toString());
+            }
+        });
+
+        binding.clearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                controller.sendDeleteRequest(); // Trigger DELETE request
+                controller.sendGetRequest();
             }
         });
 

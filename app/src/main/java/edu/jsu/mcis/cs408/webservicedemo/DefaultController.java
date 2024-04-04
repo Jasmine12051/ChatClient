@@ -1,5 +1,7 @@
 package edu.jsu.mcis.cs408.webservicedemo;
 
+import org.json.JSONObject;
+
 public class DefaultController extends AbstractController {
 
     public static final String ELEMENT_OUTPUT_PROPERTY = "Output";
@@ -12,8 +14,12 @@ public class DefaultController extends AbstractController {
         invokeModelMethod("sendGetRequest", null);
     }
 
-    public void sendPostRequest() {
+    public void sendPostRequest(JSONObject json) {
         invokeModelMethod("sendPostRequest", null);
+    }
+
+    public void sendDeleteRequest() {
+        invokeModelMethod("sendDeleteRequest", null);
     }
 
 }
