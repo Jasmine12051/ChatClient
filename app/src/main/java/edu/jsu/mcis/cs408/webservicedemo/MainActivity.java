@@ -65,14 +65,6 @@ public class MainActivity extends AppCompatActivity implements AbstractView {
         binding.clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                JSONObject json = new JSONObject();
-                String message = "the board has been cleared";
-                try {
-                    json.put("message", message);
-                }
-                catch (JSONException e) {
-                    e.printStackTrace();
-                }
                 controller.sendDeleteRequest(); // Trigger DELETE request
             }
         });

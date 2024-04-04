@@ -4,12 +4,16 @@ import android.util.Log;
 import androidx.lifecycle.MutableLiveData;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -68,12 +72,36 @@ public class SimpleChatModel extends AbstractModel {
     }
 
     public void setOutputText(String newText) {
-
-
         String oldText = this.outputText;
-        this.outputText = newText;
-        Log.i(TAG, "Output Text Change: From " + oldText + " to " + newText);
-        firePropertyChange(DefaultController.ELEMENT_OUTPUT_PROPERTY, oldText, newText);
+        this.outputText = newText; // Store the original newText
+
+        // Convert the new text to a map
+        try {
+            JSONObject jsonObject = new JSONObject(newText);
+            Map<String, String> dataMap = new HashMap<>();
+
+            // Get an iterator for the keys
+            Iterator<String> keys = jsonObject.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                String value = jsonObject.getString(key);
+                dataMap.put(key, value);
+            }
+
+            // Replace newText with the extracted data from the map
+            StringBuilder extractedData = new StringBuilder();
+            for (Map.Entry<String, String> entry : dataMap.entrySet()) {
+                String value = entry.getValue();
+                extractedData.append(value).append("\n");
+            }
+            this.outputText = extractedData.toString(); // Replace newText with extracted data
+        } catch (JSONException e) {
+            Log.e(TAG, "Error parsing JSON: " + e.getMessage());
+        }
+
+        Log.i(TAG, "Output Text Change: From " + oldText + " to " + this.outputText);
+
+        firePropertyChange(DefaultController.ELEMENT_OUTPUT_PROPERTY, oldText, this.outputText);
     }
 
     public void sendGetRequest() {

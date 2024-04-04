@@ -20,8 +20,8 @@
 
     <TextView
         android:id="@+id/output"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="411dp"
+        android:layout_height="582dp"
         android:layout_marginTop="54dp"
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
