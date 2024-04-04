@@ -2,6 +2,8 @@ package edu.jsu.mcis.cs408.webservicedemo;
 
 import android.util.Log;
 import androidx.lifecycle.MutableLiveData;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -13,7 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.net.ssl.HttpsURLConnection;
 
-public class ExampleWebServiceModel extends AbstractModel {
+public class SimpleChatModel extends AbstractModel {
 
     private static final String TAG = "ExampleWebServiceModel";
 
@@ -29,7 +31,7 @@ public class ExampleWebServiceModel extends AbstractModel {
 
     private String postData; // Added to store JSON data for POST request
 
-    public ExampleWebServiceModel() {
+    public SimpleChatModel() {
         requestThreadExecutor = Executors.newSingleThreadExecutor();
 
         httpGetRequestThread = () -> {
@@ -66,6 +68,8 @@ public class ExampleWebServiceModel extends AbstractModel {
     }
 
     public void setOutputText(String newText) {
+
+
         String oldText = this.outputText;
         this.outputText = newText;
         Log.i(TAG, "Output Text Change: From " + oldText + " to " + newText);
@@ -155,19 +159,20 @@ public class ExampleWebServiceModel extends AbstractModel {
                     } else {
                         Log.e(TAG, "Delete operation failed");
                     }
-                } else {
-                    // Handle other HTTP methods (GET, POST, etc.)
-                    if (code == HttpsURLConnection.HTTP_OK || code == HttpsURLConnection.HTTP_CREATED) {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-                        do {
-                            line = reader.readLine();
-                            if (line != null) r.append(line);
-                        } while (line != null);
-                    }
-
-                    results = new JSONObject(r.toString());
                 }
+                    // Handle other HTTP methods (GET, POST)
+                if (code == HttpsURLConnection.HTTP_OK || code == HttpsURLConnection.HTTP_CREATED ) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+                    do {
+                        line = reader.readLine();
+                        if (line != null) r.append(line);
+                    } while (line != null);
+                }
+
+                results = new JSONObject(r.toString());
+                Log.d(TAG, "Here are the results" + results);
+
 
             } catch (Exception e) {
                 Log.e(TAG, " Exception: ", e);

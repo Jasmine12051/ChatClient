@@ -4,9 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.view.View;
-import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements AbstractView {
         /* Create Controller and Models */
 
         controller = new DefaultController();
-        ExampleWebServiceModel model = new ExampleWebServiceModel();
+        SimpleChatModel model = new SimpleChatModel();
 
         /* Register Activity View and Model with Controller */
 
@@ -48,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements AbstractView {
         binding.postButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String username = "USER 1";
+                String username = "Jasmine Allen";
                 String message = binding.input.getText().toString();
                 // Construct JSON data
                 JSONObject json = new JSONObject();
@@ -67,8 +65,15 @@ public class MainActivity extends AppCompatActivity implements AbstractView {
         binding.clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                JSONObject json = new JSONObject();
+                String message = "the board has been cleared";
+                try {
+                    json.put("message", message);
+                }
+                catch (JSONException e) {
+                    e.printStackTrace();
+                }
                 controller.sendDeleteRequest(); // Trigger DELETE request
-                controller.sendGetRequest();
             }
         });
 

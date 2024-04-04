@@ -14,7 +14,7 @@ public class DefaultController extends AbstractController {
         invokeModelMethod("sendGetRequest", null);
     }
 
-    public void sendPostRequest(JSONObject json) {
+    public void sendPostRequest() {
         invokeModelMethod("sendPostRequest", null);
     }
 
